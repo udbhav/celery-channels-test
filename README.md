@@ -12,4 +12,16 @@ Minimal reproducible test case for triggering: `RuntimeError: You cannot use Asy
     # note `RuntimeError` in celery logs
     ```
 
-My assumption is celery conditionally creates an event loop under different loads, but not sure.
+Now try using a task that doesn't use channels group_send, and note that there is no error thrown because an event loop is never detected:
+
+- Run `docker-compose up -d` to bring up django, celery, and other requirements
+- Run `docker-compose logs -f worker` to watch celery logs
+- In a separate tab run `docker-compose exec python src/manage.py shell` and then following in the shell:
+    ```
+    from celery_channels_test.celery import detect_event_loop
+    detect_event_loop.delay()
+    # verify task succeeded normally in celery logs
+    for i in range(10):
+        sync_send.delay()
+    # note lack of a ValueError that would be thrown if the event loop is running
+    ```

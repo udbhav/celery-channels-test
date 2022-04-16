@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+import asyncio
 import os
 
 import channels.layers
@@ -24,3 +25,14 @@ app.autodiscover_tasks()
 def sync_send(self):
     channel_layer = channels.layers.get_channel_layer()
     async_to_sync(channel_layer.group_send)("foo", {"bar": 1})
+
+
+@app.task(bind=True)
+def detect_event_loop(self):
+    try:
+        event_loop = asyncio.get_event_loop()
+    except RuntimeError:
+        pass
+    else:
+        if event_loop.is_running():
+            raise ValueError("event loop running")
